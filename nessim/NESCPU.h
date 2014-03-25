@@ -22,9 +22,10 @@
 #if !defined(_NESCPU_H)
 #define _NESCPU_H
 
-#include "NES.h"
 #include "types.h"
 #include "AddressingMode.h"
+
+class NES;
 
 // Cantidad de registros de entrada y salida que son respaldados en memoria
 class NESCPU {
@@ -100,7 +101,7 @@ public:
 	// retorna el registro Y
 	ushort getY();
 	// Retorna el registro de status del procesador
-	ushort getP();
+	ubyte getP();
 	// Retorna el número de ciclos de la cpu
 	uint64 getCycles();
 	// Tick
@@ -209,7 +210,7 @@ private:
 	ubyte Y;
 	// Contiene en sus bit valores bandera las cuales se asignan o limpian cuando una instrucción es ejecutada, los bits contienen las siguientes banderas:
 	// 0-Carry Flag (C), 1-Zero Flag (Z), 2-Interrupt Disable (I), 3-Decimal Mode (D), 4-Break Command (B), 6-Overflow Flag (V), 7-Negative Flag (N)
-	ushort P;
+	ubyte P;
 	// El equipo que agrupa todos los componentes
 	NES *nes;
 	// Ciclos del cpu

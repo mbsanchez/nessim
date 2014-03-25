@@ -23,9 +23,11 @@
 #define _NES_H
 
 #include "NESMemory.h"
+#include "NESCPU.h"
 
 class NES {
 public:
+	friend class NESCPU;
 	// Constructor de la clase
 	NES();
 	// Destructor de objetos de la clase
@@ -38,8 +40,12 @@ public:
 	NESMemory* getPpuMemory();
 private:
 	bool dmaAcessing;
+	/*Memoria para la cpu*/
 	NESMemory *ppuMemory;
+	/*Memoria para la PPU*/
 	NESMemory *cpuMemory;
+	/*El CPU del sistema*/
+	NESCPU *cpu;
 };
 
 #endif  //_NES_H

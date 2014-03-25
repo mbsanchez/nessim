@@ -27,6 +27,7 @@ NES::NES() {
 	cpuMemory = new NESMemory(NESCPU::MEMORY_SIZE);
 	// TODO:: Inicializar la memoria de la ppu
 	ppuMemory = 0;
+	cpu = new NESCPU(this);
 }
 
 NES::~NES() {
