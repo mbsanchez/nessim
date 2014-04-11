@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -19,58 +19,68 @@
  *************************************************************************/
 
 
-#include "NESMemory.h"
-#include <stdio.h>
+#include "Memory.h"
 #include <stdlib.h>
 #include <string.h>
 
-NESMemory::NESMemory(uint32 size) {
+using namespace std;
+
+Memory::Memory(){
+	buffer = NULL;
+	size = 0;
+	isBufferOwner = true;
+}
+
+Memory::Memory(uint32 size) {
 	this->size = size;
 	buffer = new ubyte[size];
+	isBufferOwner = true;
 
 	if(buffer == NULL)
 		throw "error: no se ha podido inicializar la memoria del emulador";
+
+	memset(buffer, 0, size);
 }
 
-NESMemory::~NESMemory() {
-	if(buffer)
+Memory::~Memory() {
+	if(isBufferOwner && buffer)
 		delete [] buffer;
 }
 
-ubyte NESMemory::readByte(ushort address) {
+ubyte Memory::readByte(uint32 address) {
 	if(address >= size)
 		throw "error: dirección de memoria inválida";
 	return buffer[address];
 }
 
-ushort NESMemory::readShort(ushort address) {
+ushort Memory::readShort(uint32 address) {
 	if(address >= size || address + 1 >= size)
 		throw "error: dirección de memoria inválida";
 
-	return NESMemory::makeShort(buffer[address], buffer[address+1]);
+	return Memory::makeShort(buffer[address], buffer[address+1]);
 }
 
-void NESMemory::read(ushort address, ubyte* buffer, ushort size) {
-	if(address >= this->size || address + size >= this->size)
+void Memory::read(uint32 address, ubyte* buffer, uint32 size) {
+	if(address >= this->size || address + size > this->size)
 		throw "error: dirección de memoria inválida";
 
 	memcpy(buffer, buffer+address, size);
 }
 
-void NESMemory::writeByte(ushort address, ubyte value) {
+void Memory::writeByte(uint32 address, ubyte value) {
 	if(address >= size)
 		throw "error: dirección de memoria inválida";
 	buffer[address] = value;
 }
 
-void NESMemory::write(ushort address, ubyte* buffer, ushort size) {
-	if(address >= this->size || address + size >= this->size)
+void Memory::write(uint32 address, ubyte* buffer, uint32 size) {
+	if(address >= this->size || address + size > this->size)
 		throw "error: dirección de memoria inválida";
 
 	memcpy(buffer+address, buffer , size);
 }
 
-void NESMemory::writeShort(ushort address, ushort value) {
+void Memory::writeShort(uint32 address, ushort value) {
 	if(address >= size || address + 1 >= size)
 		throw "error: dirección de memoria inválida";
 
@@ -78,23 +88,45 @@ void NESMemory::writeShort(ushort address, ushort value) {
 	buffer[address+1] = value >> 8;
 }
 
-ushort NESMemory::getSize() {
+uint32 Memory::getSize() {
 	return size;
 }
 
-ushort NESMemory::makeShort(ubyte low, ubyte high){
+ushort Memory::makeShort(ubyte low, ubyte high){
 	return (ushort)(high << 8 | low);
 }
 
-void NESMemory::clear(ushort address, ushort size){
-	if(address >= this->size || address + size >= this->size)
+void Memory::clear(uint32 address, uint32 size){
+	if(address >= this->size || address + size > this->size)
 		throw "error: dirección de memoria inválida";
 
 	memset(buffer + address, 0, size);
 }
 
-void NESMemory::makeMirrorOfAddress(ushort addr, ushort upperBoundAddr, ushort step){
-	for(int i=addr+step;i<upperBoundAddr;i+=step)
+void Memory::makeMirrorOfAddress(uint32 addr, uint32 upperBoundAddr, uint32 step){
+	for(uint32 i=addr+step;i<upperBoundAddr;i+=step)
 		buffer[i] = buffer[addr];
+}
+
+ubyte* Memory::getRealPhysicalAddress(uint32 addr){
+	if(addr >= size)
+		throw "error: dirección de memoria inválida";
+	return buffer + addr;
+}
+
+void Memory::createMemoryPage(uint32 beginAddress, uint32 size, Memory &mem){
+	if(beginAddress >= this->size || beginAddress + size > this->size)
+		throw "error: dirección de memoria inválida";
+
+	mem.buffer = buffer + beginAddress;
+	mem.size = size;
+	mem.isBufferOwner = false;
+}
+
+void Memory::loadFromFile(ifstream &file, uint32 begAddr, uint32 size){
+	if(begAddr >= this->size || begAddr + size > this->size)
+		throw "error: dirección de memoria inválida";
+
+	file.read((char*)buffer + begAddr, size);
 }
 

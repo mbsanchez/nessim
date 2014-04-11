@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -21,12 +21,21 @@
 #include <stdio.h>
 #include <tchar.h>
 #include "types.h"
+#include "NES.h"
+#include "GamePak.h" 
+#include "NESSDLDisplay.h"
+#include "RegionType.h"
 
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char* argv[])
 {
-	ubyte b = 1;
-	printf("%d", b << 8 | 1); 
-	getchar();
+	NESSDLDisplay display;
+	NES nes(Region::REGION_NTSC, &display);
+	GamePak cartridge;
+
+	cartridge.loadFromFile(argv[1]);
+	nes.insertCartridge(&cartridge, false);
+	nes.runFrame();
+
 	return 0;
 }
 

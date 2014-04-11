@@ -18,50 +18,36 @@
  *   along with Foobar.  If not, see <http://www.gnu.org/licenses/>.     *
  *************************************************************************/
 
+#ifndef REGIONTYPE_H
+#define REGIONTYPE_H
 
-#include "NES.h"
-#include "Memory.h"
-#include "NESCPU.h"
-#include <cstring>
+#include "types.h"
 
-NES::NES(Region::RegionType type, AbstractDisplay *display): region(type) {
-	this->display = display;
-	cpu = new NESCPU(this);
-	ppu = new NESPPU(this);
-	cartridge = NULL;
-}
+class Region {
+public:
+	enum RegionType{
+		REGION_NTSC,
+		REGION_PAL,
+		REGION_DENDY
+	};
+private:
+	// Tipo de Región
+	RegionType	type;
+	//frames per second
+	uint32 fps;
+	// Reloj
+	uint32 hz;
+	// linea de inicio de vblank
+	uint32 vBlankStartLine;
+	// Ultima línea de la pantalla
+	uint32 screenEndLine;
+public:
+	Region(RegionType region);
+	RegionType getType();
+	uint32 getFPS();
+	uint32 getHz();
+	uint32 getVBlankStartLine();
+	uint32 getScreenEndLine();
+};
 
-NES::~NES() {
-	delete cpu;
-}
-
-NESCPU* NES::getCPU(){
-	return cpu;
-}
-
-Region NES::getRegion(){
-	return region;
-}
-
-void NES::runFrame(){
-	for(;;) 
-		cpu->runInstruction();
-}
-
-void NES::syncHardware(){
-	cpu->opcodeCycles--;
-	ppu->tick();
-	// apu_step();
-	// mapper_tick();
-}
-
-void NES::insertCartridge(GamePak *cart, bool removePrev){
-	if(removePrev && cartridge)
-			delete cartridge;
-	
-	cartridge = cart;
-	ppu->reset();
-	cpu->hardReset();
-	ppu->regs.data = 0;
-}
-
+#endif

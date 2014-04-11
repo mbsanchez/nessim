@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -31,5 +31,10 @@ typedef uint64_t uint64;
 typedef signed char byte;
 typedef signed int int32;
 typedef int64_t int64;
+
+enum MemoryAcessMode {
+	ACESS_MODE_WRITE,
+	ACESS_MODE_READ
+};
 
 #endif

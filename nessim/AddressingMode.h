@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -28,15 +28,15 @@ enum AddressingMode {
 	ADM_IMP,		// Implícito
 	ADM_IMM,		// Inmediato
 	ADM_ABS,		// Absoluto
-	//ADM_AXR,		// Absoluto indexado en X solo lectura
+	ADM_AXR,		// Absoluto indexado en X solo lectura
 	ADM_ABX,		// Absoluto indexado en X
-	//ADM_AYR,		// Absoluto indexado en Y solo lectura
+	ADM_AYR,		// Absoluto indexado en Y solo lectura
 	ADM_ABY,		// Absoluto indexado en Y
 	ADM_ZPG,		// Zero Page
 	ADM_ZPX,		// Zero Page indexado en X
 	ADM_ZPY,		// Zero Page indexado en Y
 	ADM_INX,		// Indirecto indexado en X
-	//ADM_IYR,		// Indirecto indexado en Y para solo lectura
+	ADM_IYR,		// Indirecto indexado en Y para solo lectura
 	ADM_INY,		// Indirecto indexado en Y
 	ADM_IND,		// Indirecto
 	ADM_REL			// Relativo

@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -22,30 +22,43 @@
 #if !defined(_NES_H)
 #define _NES_H
 
-#include "NESMemory.h"
+#include "Memory.h"
 #include "NESCPU.h"
+#include "RegionType.h"
+#include "NESPPU.h"
+#include "AbstractDisplay.h"
+#include "GamePak.h"
 
 class NES {
 public:
 	friend class NESCPU;
+	friend class NESPPU;
 	// Constructor de la clase
-	NES();
+	NES(Region::RegionType type, AbstractDisplay *screen);
 	// Destructor de objetos de la clase
 	~NES();
-	// Retorna un valor que indica que se está realizando un acceso al DMA de la memoria
-	bool isDMAAccessing();
-	// Retorna la memoria del CPU
-	NESMemory* getCpuMemory();
-	// Retorna la memoria de la PPU
-	NESMemory* getPpuMemory();
+	// Retorna el componente CPU
+	NESCPU* getCPU();
+	// Retorna el tipo de región de sistema
+	Region getRegion();
+	// Emula la ejecución de un frame de vídeo
+	void runFrame();
+	// Sincroniza el cpu con los demás componentes de hardware
+	void syncHardware();
+	// inserta un cartucho en el dispositivo
+	void insertCartridge(GamePak *cart, bool removePrevius);
 private:
 	bool dmaAcessing;
-	/*Memoria para la cpu*/
-	NESMemory *ppuMemory;
-	/*Memoria para la PPU*/
-	NESMemory *cpuMemory;
-	/*El CPU del sistema*/
+	/*La CPU del sistema*/
 	NESCPU *cpu;
+	/*La PPU del sistema*/
+	NESPPU * ppu;
+	/*Region del Sistema*/
+	Region region;
+	/*El objeto que será usado para mostra el vídeo en pantalla*/
+	AbstractDisplay *display;
+	/* El Juego insertado en la NES*/
+	GamePak *cartridge;
 };
 
 #endif  //_NES_H

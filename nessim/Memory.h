@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -19,40 +19,52 @@
  *************************************************************************/
 
 
-#if !defined(_NESMEMORY_H)
-#define _NESMEMORY_H
+#if !defined(_MEMORY_H)
+#define _MEMORY_H
 
 #include "types.h"
+#include <fstream>
 
-class NESMemory {
+using namespace std;
+
+class Memory {
 public:
+	// Constructor por defecto
+	Memory();
 	// Constructor de la clase
-	NESMemory(uint32 size);
+	Memory(uint32 size);
 	// Destructor de la clase
-	~NESMemory();
+	~Memory();
 	// Lee un byte de la memoria en la dirección indicada por el parámetro
-	ubyte readByte(ushort address);
+	ubyte readByte(uint32 address);
 	// Lee un valor short de la memoria, desde la dirección especificada por el parámetro
-	ushort readShort(ushort address);
+	ushort readShort(uint32 address);
 	// Lee un segmento de memoria y lo almacena en el parametro buffer
-	void read(ushort address, ubyte* buffer, ushort size);
+	void read(uint32 address, ubyte* buffer, uint32 size);
 	// escribe un byte en la memoria en la dirección indicada por el parámetro
-	void writeByte(ushort address, ubyte value);
+	void writeByte(uint32 address, ubyte value);
 	// escribe un semento de bytes a memoria, en la dirección específica
-	void write(ushort address, ubyte* buffer, ushort size);
+	void write(uint32 address, ubyte* buffer, uint32 size);
 	// escribe un valor short en la memoria
-	void writeShort(ushort address, ushort value);
+	void writeShort(uint32 address, ushort value);
 	// retorna la longitud de la memoria
-	ushort getSize();
+	uint32 getSize();
 	// limpia un espacio de memoria
-	void clear(ushort address, ushort size);
+	void clear(uint32 address, uint32 size);
 	//Combina dos byte en un solo numero short
 	static ushort makeShort(ubyte low, ubyte high);
 	// hace un espejo del by en addr, en sepaciones de step
-	void makeMirrorOfAddress(ushort addr, ushort upperBoundAddr, ushort step);
+	void makeMirrorOfAddress(uint32 addr, uint32 upperBoundAddr, uint32 step);
+	// Retorna la dirección real que equivale a la dirección lógica de la memoria emulada
+	ubyte* getRealPhysicalAddress(uint32 addr);
+	// Crea una página de memoria en mem a partir de la dirección indicada 
+	void createMemoryPage(uint32 addr, uint32 size, Memory &mem);
+	// Carga un conjunto de datos desde un archivo en la dirección específica
+	void loadFromFile(ifstream &file, uint32 begAddr, uint32 size);
 private:
 	ubyte *buffer;
-	ushort size;
+	uint32 size;
+	bool isBufferOwner;
 };
 
-#endif  //_NESMEMORY_H
+#endif  //_MEMORY_H

@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -24,16 +24,38 @@
 
 #include "types.h"
 #include "AddressingMode.h"
+#include "Memory.h"
+#include <fstream>
 
 class NES;
 
 // Cantidad de registros de entrada y salida que son respaldados en memoria
 class NESCPU {
+	friend class NES;
+	typedef union {
+		ubyte data;
+		struct {
+			ubyte C:1;
+			ubyte Z:1;
+			ubyte I:1;
+			ubyte D:1;
+			ubyte B:1;
+			ubyte :1;
+			ubyte V:1;
+			ubyte N:1;
+		};
+	} CPUStatusReg;
 public:
 	// Dirección de inicio de la pila en la memoria
 	static const ushort STACK_ADDRESS = 0x100;
 	// Dirección de Inicio de los registros de entrada y salida en la memoria, regularmente se almacenan en este espacio los registros de la PPU
-	static const ushort IO_REGISTERS_ADDRESS = 0x2000;
+	static const ushort PPU_IO_REGISTERS_ADDRESS = 0x2000;
+	// Espejo de los registros 0x2000-0x2007
+	static const ushort PPU_IO_REGISTERS_MIRROR_ADDRESS = 0x2008;
+	// Dirección donde se alojan los registros de la APU y Joypad
+	static const ushort APU_JOY_IO_REGISTERS_ADDRESS = 0x4000;
+	// Dirección final de los registros de la apu
+	static const ushort APU_JOY_IO_REGISTERS_END_ADDRESS = 0x4017;
 	// Dirección de inicio de la Memoria de expansión en la memoria
 	static const ushort EXPANSION_ROM_ADDRESS = 0x4020;
 	// Dirección de inicio del espacio utilizado para guardar partidas en la memoria
@@ -62,30 +84,14 @@ public:
 	static const uint32 MEMORY_SIZE = 0x10000;
 	// Marca el valor inicial del SP
 	static const ubyte SP_BEGIN = 0xFF;
-	// 1 si hay acarreo 0 en otro caso
-	static const ubyte CARRY_FLAG = 1;
-	// 1 si la operación es 0 en otro caso
-	static const ubyte ZERO_FLAG = 2;
-	// Previene al sistema de responder a IRQs
-	static const ubyte INTERRUPT_DISABLE_FLAG = 4;
-	// Cambia el procesador a modo BCD, no soportado por el chip 2A03
-	static const ubyte DECIMAL_MODE_FLAG = 8;
-	// Indica que una instrucción Break ha sido ejecutada
-	static const ubyte BREAK_COMMAND_FLAG = 16;
-	// 1 si overflow 0 sino
-	static const ubyte OVERFLOW_FLAG = 64;
-	// 1 Cuando el bit 7 es 1 en una operación, 0 en caso contrario
-	static const ubyte NEGATIVE_FLAG = 128;
 	// Número de ciclos que tarda cada operación
 	static const ubyte CYCLES_BY_OPCODE[];
 	// Constructor de la clase
 	NESCPU(NES *nes);
 	// Destructor de objetos
 	~NESCPU();
-	// emula la ejecución de un frame (varios ciclos de cpu, dependiendo de la velocidad)
-	void emulateFrame();
-	// Emula la ejecución de una intrucción
-	void emulateInstruction();
+	// Emula una intrucción que normalmente contempla varios ciclos de cpu
+	void runInstruction();
 	// Realiza un reinicio a nivel de software
 	void softReset();
 	// Realiza un reinicio a nivel de hardware
@@ -102,10 +108,28 @@ public:
 	ushort getY();
 	// Retorna el registro de status del procesador
 	ubyte getP();
-	// Retorna el número de ciclos de la cpu
-	uint64 getCycles();
-	// Tick
+	// Procesa las interrupciones si existe alguna
+	bool processInterrupt(bool _nmi);
+	// tick
 	void tick();
+	// Activa la interrupción irq
+	void activateIRQ();
+	// Activa la interrupción nmi
+	void activateNMI();
+	// Activa la bandera para indicar una interrupción NMI
+	void setNMI();
+	// Activa la bandera para indicar una interrupción IRQ
+	void setIRQ();
+	// Desactiva la bandera para indicar una interrupción NMI
+	void clearNMI();
+	// Desactiva la bandera para indicar una interrupción IRQ
+	void clearIRQ();
+	// Escribir valores a memoria
+	void writeByteToMemory(ushort address, byte value);
+	//Leer un byte de la memoria
+	ubyte readByteFromMemory(ushort address);
+	// Lee un etero largo de la memoria
+	ushort readShortFromMemory(ushort address);
 private:
 	// Realiza el calculo de la dirección de acuerdo al direccionamiento
 	inline void calculateAddress(AddressingMode mode);
@@ -190,11 +214,6 @@ private:
 	inline void executeAXA();
 	inline void executeXAS();
 	inline void executeXAA();
-	// Escribir valores a memoria
-	void writeByteToMemory(ushort address, byte value);
-	//Leer un byte de la memoria
-	ubyte readByteFromMemory(ushort address);
-	ushort readShortFromMemory(ushort address);
 	// Activa o desactiva las banderas N y Z
 	void toggleNegativeOrZeroFlag(byte value);
 private:
@@ -210,19 +229,26 @@ private:
 	ubyte Y;
 	// Contiene en sus bit valores bandera las cuales se asignan o limpian cuando una instrucción es ejecutada, los bits contienen las siguientes banderas:
 	// 0-Carry Flag (C), 1-Zero Flag (Z), 2-Interrupt Disable (I), 3-Decimal Mode (D), 4-Break Command (B), 6-Overflow Flag (V), 7-Negative Flag (N)
-	ubyte P;
+	CPUStatusReg P;
+	// RAM de la CPU
+	Memory ram;
 	// El equipo que agrupa todos los componentes
 	NES *nes;
-	// Ciclos del cpu
-	uint64 cycles;
+	// ciclos necesarios para llevar a cabo la instrucción
+	ushort opcodeCycles;
 	// dirección efectiva
 	ushort effectiveAddress;
 	// dirección de memoria de la operación actual
 	ushort operationAddress;
 	// indica cuando una interupción nmi debe ocurrir
-	ubyte nmi, prevNmi;
+	bool nmi, nmiDetected;
 	// indica cuando una interrupción irq debe ocurrir
-	ubyte irq, prevIrq;
+	bool irq;
+	// código de operación actual
+	ubyte currentOpcode;
+
+	//std::ofstream file;
+	uint32 op;
 };
 
 #endif  //_NESCPU_H

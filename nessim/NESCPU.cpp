@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -21,6 +21,7 @@
 #include "NESCPU.h"
 #include "NES.h"
 #include "AddressingMode.h"
+#include "IORegistersAddress.h"
 
 #define CASE_OPCODE(n,o,a)			\
 	case 0x##n:						\
@@ -28,56 +29,70 @@
 		this->execute##o();			\
 		break;
 
-const ubyte NESCPU::CYCLES_BY_OPCODE[] = {  0x07,	0x06,	0x00,	0x08,	0x03,	0x03,	0x05,	0x05,	
+const ubyte NESCPU::CYCLES_BY_OPCODE[] = {  0x07,	0x06,	0x02,	0x08,	0x03,	0x03,	0x05,	0x05,	
 											0x03,	0x02,	0x02,	0x02,	0x04,	0x04,	0x06,	0x06,
-											0x82,	0x85,	0x00,	0x08,	0x04,	0x04,	0x06,	0x06,	
+											0x82,	0x85,	0x02,	0x08,	0x04,	0x04,	0x06,	0x06,	
 											0x02,	0x84,	0x02,	0x07,	0x84,	0x84,	0x07,	0x07,
-											0x06,	0x06,	0x00,	0x08,	0x03,	0x03,	0x05,	0x05,	
+											0x06,	0x06,	0x02,	0x08,	0x03,	0x03,	0x05,	0x05,	
 											0x04,	0x02,	0x02,	0x02,	0x04,	0x04,	0x06,	0x06,
-											0x82,	0x85,	0x00,	0x08,	0x04,	0x04,	0x06,	0x06,	
+											0x82,	0x85,	0x02,	0x08,	0x04,	0x04,	0x06,	0x06,	
 											0x02,	0x84,	0x02,	0x07,	0x84,	0x84,	0x07,	0x07,
-											0x06,	0x06,	0x00,	0x08,	0x03,	0x03,	0x05,	0x05,	
+											0x06,	0x06,	0x02,	0x08,	0x03,	0x03,	0x05,	0x05,	
 											0x03,	0x02,	0x02,	0x02,	0x03,	0x04,	0x06,	0x06,
-											0x82,	0x85,	0x00,	0x08,	0x04,	0x04,	0x06,	0x06,	
+											0x82,	0x85,	0x02,	0x08,	0x04,	0x04,	0x06,	0x06,	
 											0x02,	0x84,	0x02,	0x07,	0x84,	0x84,	0x07,	0x07,
-											0x06,	0x06,	0x00,	0x08,	0x03,	0x03,	0x05,	0x05,	
-											0x04,	0x02,	0x02,	0x02,	0x05,	0x04,	0x04,	0x06,
-											0x82,	0x85,	0x00,	0x08,	0x04,	0x04,	0x06,	0x06,	
+											0x06,	0x06,	0x02,	0x08,	0x03,	0x03,	0x05,	0x05,	
+											0x04,	0x02,	0x02,	0x02,	0x05,	0x04,	0x06,	0x06,
+											0x82,	0x85,	0x02,	0x08,	0x04,	0x04,	0x06,	0x06,	
 											0x02,	0x84,	0x02,	0x07,	0x84,	0x84,	0x07,	0x07,
 											0x02,	0x06,	0x02,	0x06,	0x03,	0x03,	0x03,	0x03,	
 											0x02,	0x02,	0x02,	0x02,	0x04,	0x04,	0x04,	0x04,
-											0x82,	0x06,	0x00,	0x06,	0x04,	0x04,	0x04,	0x04,	
+											0x82,	0x06,	0x02,	0x06,	0x04,	0x04,	0x04,	0x04,	
 											0x02,	0x05,	0x02,	0x05,	0x05,	0x05,	0x05,	0x05,
 											0x02,	0x06,	0x02,	0x06,	0x03,	0x03,	0x03,	0x03,	
 											0x02,	0x02,	0x02,	0x02,	0x04,	0x04,	0x04,	0x04,
-											0x82,	0x85,	0x00,	0x85,	0x04,	0x04,	0x04,	0x04,	
+											0x82,	0x85,	0x02,	0x85,	0x04,	0x04,	0x04,	0x04,	
 											0x02,	0x84,	0x02,	0x84,	0x84,	0x84,	0x84,	0x84,
 											0x02,	0x06,	0x02,	0x08,	0x03,	0x03,	0x05,	0x05,	
 											0x02,	0x02,	0x02,	0x02,	0x04,	0x04,	0x06,	0x06,
-											0x82,	0x85,	0x00,	0x08,	0x04,	0x04,	0x06,	0x06,	
+											0x82,	0x85,	0x02,	0x08,	0x04,	0x04,	0x06,	0x06,	
 											0x02,	0x84,	0x02,	0x07,	0x84,	0x84,	0x07,	0x07,
-											0x02,	0x06,	0x02,	0x08,	0x03,	0x03,	0x05,	0x05,	
+											0x02,	0x06,	0x03,	0x08,	0x03,	0x03,	0x05,	0x05,	
 											0x02,	0x02,	0x02,	0x02,	0x04,	0x04,	0x06,	0x06,
-											0x82,	0x85,	0x00,	0x08,	0x04,	0x04,	0x06,	0x06,	
+											0x82,	0x85,	0x02,	0x08,	0x04,	0x04,	0x06,	0x06,	
 											0x02,	0x84,	0x02,	0x07,	0x84,	0x84,	0x07,	0x07 };
 
-NESCPU::NESCPU(NES *nes) {
+NESCPU::NESCPU(NES *nes): ram(RAM_SIZE) {
 	this->nes = nes;
-	hardReset();
+
+	///file.open("nessim.txt");
+	op = 0;
 }
 
 NESCPU::~NESCPU() {
 }
 
-void NESCPU::emulateFrame() {
+void NESCPU::runInstruction() {
 
-}
-
-void NESCPU::emulateInstruction() {
+	opcodeCycles = 0;
+	bool _nmi = nmi;
 	operationAddress = PC;
-	ubyte opcode = readByteFromMemory(PC++);
+	currentOpcode = readByteFromMemory(PC++);
+	opcodeCycles += CYCLES_BY_OPCODE[currentOpcode] & 0x7F;
 
-	switch(opcode){
+	if(processInterrupt(nmi))
+		return;
+
+	/*file << std::hex << (int)currentOpcode << ", " << (PC-1) 
+		 << ", " << (int)P.data
+		 << ", " << (int)A
+		 << ", " << (int)X
+		 << ", " << (int)Y
+		 << ", " << (int)SP
+		 << endl ;*/
+	op++;
+
+	switch(currentOpcode){
 		CASE_OPCODE(00,BRK, ADM_IMP)	CASE_OPCODE(01,ORA, ADM_INX)	
 		CASE_OPCODE(02,UNK, ADM_UNK)	CASE_OPCODE(03,SLO, ADM_INX)	
 		CASE_OPCODE(04,NOP, ADM_ZPG)	CASE_OPCODE(05,ORA, ADM_ZPG)	
@@ -94,7 +109,7 @@ void NESCPU::emulateInstruction() {
 		CASE_OPCODE(1A,NOP, ADM_IMP)	CASE_OPCODE(1B,SLO, ADM_ABY)	
 		CASE_OPCODE(1C,NOP, ADM_ABX)	CASE_OPCODE(1D,ORA, ADM_ABX)	
 		CASE_OPCODE(1E,ASL, ADM_ABX)	CASE_OPCODE(1F,SLO, ADM_ABX)
-		CASE_OPCODE(20,JSR, ADM_ABS)	CASE_OPCODE(21,AND, ADM_INX)	
+		CASE_OPCODE(20,JSR, ADM_IMP)	CASE_OPCODE(21,AND, ADM_INX)	
 		CASE_OPCODE(22,UNK, ADM_UNK)	CASE_OPCODE(23,RLA, ADM_INX)	
 		CASE_OPCODE(24,BIT, ADM_ZPG)	CASE_OPCODE(25,AND, ADM_ZPG)	
 		CASE_OPCODE(26,ROL, ADM_ZPG)	CASE_OPCODE(27,RLA, ADM_ZPG)
@@ -207,26 +222,88 @@ void NESCPU::emulateInstruction() {
 		CASE_OPCODE(FC,NOP, ADM_ABX)	CASE_OPCODE(FD,SBC, ADM_ABX)	
 		CASE_OPCODE(FE,INC, ADM_ABX)	CASE_OPCODE(FF,ISB, ADM_ABX)
 	}
+	while(opcodeCycles>0){
+		tick();
+	}
 }
 
 void NESCPU::softReset() {
 	PC = readShortFromMemory(RESET_HANDLER_ADDRESS);
-	P |= INTERRUPT_DISABLE_FLAG;
+	P.I = 1;
 }
 
 void NESCPU::hardReset() {
 	A = X = Y = 0;
-	P = 0x24 | ZERO_FLAG;
+	P.data = 26;
 	SP = SP_BEGIN;
-	cycles = 0;
 	effectiveAddress = 0;
+
 	PC = readShortFromMemory(RESET_HANDLER_ADDRESS);
-	nes->getCpuMemory()->clear(ZERO_PAGE_ADRESS, RAM_SIZE*4);
-	nmi = prevNmi = irq = prevIrq = 0;
+	
+	nmi = irq = nmiDetected = false;
+	
+	for(uint32 a=0; a<0x800; ++a)
+		ram.writeByte(a, (a&4) ? 0xFF : 0x00);
 }
 
 void NESCPU::tick(){
-	cycles++;
+	nes->syncHardware();
+}
+
+bool NESCPU::processInterrupt(bool _nmi){
+	bool ret = true;
+
+	if (_nmi && !nmiDetected){
+		///file << "NMI, " << (PC-1) << endl; 
+		PC--;
+		nmiDetected = true;
+		activateNMI();
+	}else if (irq && !P.I){
+		PC--;
+		activateIRQ();
+	}else
+		ret = false;
+
+	if(!_nmi) nmiDetected=false;
+
+	return ret;
+}
+
+void NESCPU::activateIRQ(){
+	writeByteToMemory(STACK_ADDRESS | SP, PC >> 8); SP--;
+	writeByteToMemory(STACK_ADDRESS | SP, PC & 0xFF); SP--;
+	writeByteToMemory(STACK_ADDRESS | SP, P.data); SP--;
+	P.I = 1;
+	
+	if(nmi){
+		nmi = false;
+		PC =  readShortFromMemory(NMI_HANDLER_ADDRESS);	
+	}else
+		PC =  readShortFromMemory(IRQ_HANDLER_ADDRESS);
+}
+
+void NESCPU::activateNMI(){
+	writeByteToMemory(STACK_ADDRESS | SP, PC >> 8); SP--;
+	writeByteToMemory(STACK_ADDRESS | SP, PC & 0xFF); SP--;
+	writeByteToMemory(STACK_ADDRESS | SP, P.data); SP--;
+	P.I = 1;
+	PC =  readShortFromMemory(NMI_HANDLER_ADDRESS);
+}
+
+void NESCPU::setNMI(){
+	nmi = true;
+}
+
+void NESCPU::setIRQ(){
+	irq = true;
+}
+
+void NESCPU::clearNMI(){
+	nmi = false;
+}
+
+void NESCPU::clearIRQ(){
+	irq = false;
 }
 
 ushort NESCPU::getPC() {
@@ -250,35 +327,71 @@ ushort NESCPU::getY() {
 }
 
 ubyte NESCPU::getP() {
-	return P;
+	return P.data;
 }
 
-uint64 NESCPU::getCycles(){
-	return cycles;
-}
-
+// -----------------------------------------------------------------
 void NESCPU::writeByteToMemory(ushort address, byte value){
-	nes->cpuMemory->writeByte(address, value);
+	 nes->syncHardware();
 
-	if(address < RAM_SIZE){
-		nes->cpuMemory->makeMirrorOfAddress(address, IO_REGISTERS_ADDRESS, RAM_SIZE);
-	}else if(address >= IO_REGISTERS_ADDRESS && address < IO_REGISTERS_ADDRESS+IO_REGISTERS_SIZE){
-		nes->cpuMemory->makeMirrorOfAddress(address, 0x4000, IO_REGISTERS_SIZE);
-	}
+	if(address < RAM_SIZE) // RAM
+		ram.writeByte(address, value);
+	else if(address < PPU_IO_REGISTERS_ADDRESS) // Espejos de la RAM
+		ram.writeByte(address & (RAM_SIZE-1), value);
+	else if(address < APU_JOY_IO_REGISTERS_ADDRESS) //Registros de la PPU y espejo
+		nes->ppu->writeToIO(address, value);
+	else if(address <= APU_JOY_IO_REGISTERS_END_ADDRESS){ //Registros de la APU y JoyPad
+		switch(address)
+        { //TODO: APU
+		case PAPU_SPR_DMA_REGISTER: // OAM DMA: Copy 256 bytes from RAM into PPU's sprite memory
+			//for(unsigned b=0; b<256; ++b) 
+			//	writeByteToMemory(SPR_RAM_IO_REG, readByteFromMemory((value & 7)*0x0100+b));
+			nes->ppu->writeSpriteDMA(value);
+                    break;
+		//case 0x15: APU->Write(0x15,v); break;
+		case JOYPAD1_PORT:
+			nes->display->joyStrobe(value);
+			break;
+		//default:
+		//	APU->Write(addr&0x1F, v);
+        }
+	}else //Exp Rom, SRam, PRG-ROM
+		//nes->cpuMemory->writeByte(address, value);
+		nes->cartridge->access(address, value, ACESS_MODE_WRITE);
 }
 
 ubyte NESCPU::readByteFromMemory(ushort address){
-	return nes->getCpuMemory()->readByte(address);
+	nes->syncHardware();
+
+	if(address < RAM_SIZE) // RAM
+		return ram.readByte(address);
+	else if(address < PPU_IO_REGISTERS_ADDRESS) // Espejos de la RAM
+		return ram.readByte(address & (RAM_SIZE-1));
+	else if(address < APU_JOY_IO_REGISTERS_ADDRESS) //Registros de la PPU y su espejo
+		return nes->ppu->readFromIO(address);
+	else if(address <= APU_JOY_IO_REGISTERS_END_ADDRESS) //Registros de la APU y JoyPad
+		switch(address) //TODO: APU
+        {
+        //case 0x15: return APU->Read();
+		case JOYPAD1_PORT: 
+			return nes->display->joyRead(0); 
+		case JOYPAD2_PORT: 
+			return nes->display->joyRead(1); 
+        }
+	//Exp Rom, SRam, PRG-ROM
+	return nes->cartridge->access(address, 0, ACESS_MODE_READ);
 }
 
 ushort NESCPU::readShortFromMemory(ushort address){
-	return nes->getCpuMemory()->readShort(address);
+	return readByteFromMemory(address) | (readByteFromMemory(address+1) << 8);
 }
 
+// -----------------------------------------------------------------
 void NESCPU::calculateAddress(AddressingMode mode){
+	ushort tmpaddr;
+
 	switch(mode){
 		case ADM_UNK:
-			throw "error: modo de direccionamiento no soportado";
 			break;
 		case ADM_IMP: // No se usa dirección
 			effectiveAddress = -1;
@@ -287,24 +400,34 @@ void NESCPU::calculateAddress(AddressingMode mode){
 			effectiveAddress = PC++;
 			break;
 		case ADM_ABS: 
-			effectiveAddress = readShortFromMemory(PC);
-			PC+=2;
+			effectiveAddress = readByteFromMemory(PC++)
+				             | readByteFromMemory(PC++) << 8;
 			break;
 		/*case ADM_AXR:
 			effectiveAddress = readShortFromMemory(PC) + X;
 			PC+=2;
 			break;*/
 		case ADM_ABX:
-			effectiveAddress = readShortFromMemory(PC) + X;
-			PC+=2;
+			effectiveAddress = readByteFromMemory(PC++)
+				             | readByteFromMemory(PC++) << 8;
+			if((CYCLES_BY_OPCODE[currentOpcode] & 0x80) && ((effectiveAddress & 0xFF)+X >= 0x100)){
+				opcodeCycles++;
+				nes->syncHardware();
+			}
+			effectiveAddress += X;
 			break;
 		/*case ADM_AYR:
 			effectiveAddress = readShortFromMemory(PC) + Y;
 			PC+=2;
 			break;*/
 		case ADM_ABY:
-			effectiveAddress = readShortFromMemory(PC) + Y;
-			PC+=2;
+			effectiveAddress = readByteFromMemory(PC++)
+				             | readByteFromMemory(PC++) << 8;
+			if((CYCLES_BY_OPCODE[currentOpcode] & 0x80) && ((effectiveAddress & 0xFF)+Y >= 0x100)){
+				opcodeCycles++;
+				nes->syncHardware();
+			}
+			effectiveAddress+=Y;
 			break;
 		case ADM_ZPG:
 			effectiveAddress = readByteFromMemory(PC++);
@@ -316,34 +439,49 @@ void NESCPU::calculateAddress(AddressingMode mode){
 			effectiveAddress = (readByteFromMemory(PC++) + Y) & 0xFF;
 			break;
 		case ADM_INX:
-			effectiveAddress = readByteFromMemory(PC++);
-			effectiveAddress = readShortFromMemory(effectiveAddress)+X;
+			effectiveAddress = (readByteFromMemory(PC++) + X) & 0xFF;
+			effectiveAddress = readByteFromMemory(effectiveAddress)
+				             | readByteFromMemory((effectiveAddress+1) & 0xFF) << 8;
 			break;
 		/*case ADM_IYR:
 			effectiveAddress = readByteFromMemory(PC++);
 			effectiveAddress = readShortFromMemory(effectiveAddress)+Y;
 			break;*/
-		case ADM_INY:
+		case ADM_INY: 
 			effectiveAddress = readByteFromMemory(PC++);
-			effectiveAddress = readShortFromMemory(effectiveAddress)+Y;
+			effectiveAddress = readByteFromMemory(effectiveAddress)
+				             | readByteFromMemory((effectiveAddress+1) & 0xFF) << 8;
+			if((CYCLES_BY_OPCODE[currentOpcode] & 0x80) && ((effectiveAddress & 0xFF)+Y >= 0x100)){
+				opcodeCycles++;
+				nes->syncHardware();
+			}
+			effectiveAddress += Y;
 			break;
 		case ADM_IND:
-			effectiveAddress = readShortFromMemory(PC);
-			effectiveAddress = readShortFromMemory(effectiveAddress);
-			PC+=2;
+			tmpaddr = readByteFromMemory(PC++)
+				    | readByteFromMemory(PC++) << 8;
+			effectiveAddress = readByteFromMemory(tmpaddr);
+			tmpaddr = (tmpaddr & 0xFF00) | ((tmpaddr + 1) & 0xFF);
+			effectiveAddress |= readByteFromMemory(tmpaddr) << 8; 
 			break;
 		case ADM_REL:
 			byte operando = readByteFromMemory(PC++);
 			effectiveAddress = PC + operando;
+			if((effectiveAddress ^ PC) & 0xFF00){
+				opcodeCycles++;
+				nes->syncHardware();
+			}
 			break;
 	}
 }
 
+// -----------------------------------------------------------------
 void NESCPU::toggleNegativeOrZeroFlag(byte value){
-	P = (value==0)? P | ZERO_FLAG: P & ~ZERO_FLAG;
-	P = (value & 0x80)? P | NEGATIVE_FLAG : P & ~NEGATIVE_FLAG;
+	P.Z = (value==0)? 1 : 0;
+	P.N = (value & 0x80)? 1 : 0;
 }
 
+//----------------------------ALU-----------------------------------
 void NESCPU::executeORA(){
 	A |= readByteFromMemory(effectiveAddress);
 	toggleNegativeOrZeroFlag(A);
@@ -361,175 +499,206 @@ void NESCPU::executeEOR(){
 
 void NESCPU::executeASL(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	P = (op & 0x80)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (op & 0x80)? 1 : 0;
 	op <<= 1;
 	writeByteToMemory(effectiveAddress, op);
 	toggleNegativeOrZeroFlag(op);
 }
 
 void NESCPU::executeASLA(){
-	P = (A & 0x80)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (A & 0x80)? 1 : 0;
 	A <<= 1;
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeROL(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
-	P = (op & 0x80)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte carry = P.C;
+	P.C = (op & 0x80)? 1 : 0;
 	op = (op << 1) | carry;
 	writeByteToMemory(effectiveAddress, op);
 	toggleNegativeOrZeroFlag(op);
 }
 
 void NESCPU::executeROLA(){
-	ubyte carry = P & CARRY_FLAG;
-	P = (A & 0x80)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte carry = P.C;
+	P.C = (A & 0x80)? 1 : 0;
 	A = (A << 1) | carry;
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeROR(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
-	P = (op & 1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte carry = P.C;
+	P.C = (op & 1)? 1 : 0;
 	op = (op >> 1) | (carry << 7);
 	writeByteToMemory(effectiveAddress, op);
 	toggleNegativeOrZeroFlag(op);
 }
 
 void NESCPU::executeRORA(){
-	ubyte carry = P & CARRY_FLAG;
-	P = (A & 1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte carry = P.C;
+	P.C = (A & 1)? 1 : 0;
 	A = (A >> 1) | (carry << 7);
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeLSR(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	P = (op & 1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (op & 1)? 1 : 0;
 	op >>= 1;
 	writeByteToMemory(effectiveAddress, op);
 	toggleNegativeOrZeroFlag(op);
 }
 
 void NESCPU::executeLSRA(){
-	P = (A & 1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (A & 1)? 1 : 0;
 	A >>= 1;
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeADC(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
-	short tmp = A + op + carry;
-	P = (tmp & 0xFF00)? P | CARRY_FLAG : P & ~CARRY_FLAG;
-	P = (((A ^ tmp) & (op ^ tmp)) & 0x80) ? P | OVERFLOW_FLAG : P & ~OVERFLOW_FLAG;
+	ubyte carry = P.C;
+	int tmp = int(A) + op + carry;
+	P.C = (tmp & 0xFF00)? 1 : 0;
+	P.V = (((A ^ tmp) & (op ^ tmp)) & 0x80) ? 1 : 0;
 	A = tmp & 0xFF;	
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeSBC(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
-	short tmp = A - op - !carry;
-	P = (tmp & 0xFF00)? P | CARRY_FLAG : P & ~CARRY_FLAG;
-	P = (((A ^ op) & (A ^ tmp)) & 0x80) ? P | OVERFLOW_FLAG : P & ~OVERFLOW_FLAG;
-	A = tmp & 0xFF;	
+	op ^= 0xFF;
+	ubyte carry = P.C;
+	int tmp = int(A) + op + carry;
+	P.C = (tmp & 0xFF00)? 1 : 0;
+	P.V = (((tmp ^ A) & (tmp ^ op)) & 0x80) ? 1 : 0;
+	A = tmp & 0xFF;
 	toggleNegativeOrZeroFlag(A);
 }
 
+//---------------------------JUMP----------------------------------
 void NESCPU::executeBMI(){
-	if(P & NEGATIVE_FLAG)
+	if(P.N){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBPL(){
-	if((P & NEGATIVE_FLAG)==0)
+	if(!P.N){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBVS(){
-	if(P & OVERFLOW_FLAG)
+	if(P.V){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBVC(){
-	if((P & OVERFLOW_FLAG)==0)
+	if(!P.V){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBCS(){
-	if(P & CARRY_FLAG)
+	if(P.C){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBCC(){
-	if((P & CARRY_FLAG)==0)
+	if(!P.C){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBEQ(){
-	if(P & ZERO_FLAG)
+	if(P.Z){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
 void NESCPU::executeBNE(){
-	if((P & ZERO_FLAG)==0)
+	if(!P.Z){
 		PC = effectiveAddress;
+		opcodeCycles++;
+		nes->syncHardware();
+	}
 }
 
+//--------------------------COMPARE---------------------------------
 void NESCPU::executeBIT(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	P = (op & 0x80)? P | NEGATIVE_FLAG : P & ~NEGATIVE_FLAG;
-	P = (op & 0x40) ? P | OVERFLOW_FLAG : P & ~OVERFLOW_FLAG;
-	P = ((op & A)==0)? P | ZERO_FLAG: P & ~ZERO_FLAG;
+	P.N = (op & 0x80)? 1 : 0;
+	P.V = (op & 0x40) ? 1 : 0;
+	P.Z = ((op & A)==0)? 1: 0;
 }
 
 void NESCPU::executeCMP(){
-	byte tmp = A - readByteFromMemory(effectiveAddress);
-	P = (tmp >= 0)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte value = readByteFromMemory(effectiveAddress);
+	byte tmp = A - value;
+	P.C = (A >= value)? 1 : 0;
 	toggleNegativeOrZeroFlag(tmp);
 }
 
 void NESCPU::executeCPX(){
-	byte tmp = X - readByteFromMemory(effectiveAddress);
-	P = (tmp >= 0)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte value = readByteFromMemory(effectiveAddress);
+	byte tmp = X - value;
+	P.C = (X >= value)? 1 : 0;
 	toggleNegativeOrZeroFlag(tmp);
 }
 
 void NESCPU::executeCPY(){
-	byte tmp = Y - readByteFromMemory(effectiveAddress);
-	P = (tmp >= 0)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte value = readByteFromMemory(effectiveAddress);
+	byte tmp = Y - value;
+	P.C = (Y >= value)? 1 : 0;
 	toggleNegativeOrZeroFlag(tmp);
 }
 
+//----------------------------FLAG-----------------------------------
 void NESCPU::executeCLC(){
-	P &= ~CARRY_FLAG;
+	P.C = 0;
 }
 
 void NESCPU::executeCLI(){
-	P &= ~INTERRUPT_DISABLE_FLAG;
+	P.I = 0;
 }
 
 void NESCPU::executeCLD(){
-	P &= ~DECIMAL_MODE_FLAG;
+	P.D = 0;
 }
 
 void NESCPU::executeCLV(){
-	P &= ~OVERFLOW_FLAG;
+	P.V = 0;
 }
 
 void NESCPU::executeSEC(){
-	P |= CARRY_FLAG;
+	P.C = 1;
 }
 
 void NESCPU::executeSEI(){
-	P |= INTERRUPT_DISABLE_FLAG;
+	P.I = 1;
 }
 
 void NESCPU::executeSED(){
-	P |= DECIMAL_MODE_FLAG;
+	P.D = 1;
 }
 
 void NESCPU::executeDEC(){
@@ -538,6 +707,7 @@ void NESCPU::executeDEC(){
 	toggleNegativeOrZeroFlag(tmp);
 }
 
+//--------------------------INC/DEC---------------------------------
 void NESCPU::executeDEX(){
 	X--;
 	toggleNegativeOrZeroFlag(X);
@@ -564,6 +734,7 @@ void NESCPU::executeINY(){
 	toggleNegativeOrZeroFlag(Y);
 }
 
+//-------------------------LOAD/STORE-------------------------------
 void NESCPU::executeLDA(){
 	A = readByteFromMemory(effectiveAddress);
 	toggleNegativeOrZeroFlag(A);
@@ -571,12 +742,12 @@ void NESCPU::executeLDA(){
 
 void NESCPU::executeLDX(){
 	X = readByteFromMemory(effectiveAddress);
-	toggleNegativeOrZeroFlag(A);
+	toggleNegativeOrZeroFlag(X);
 }
 
 void NESCPU::executeLDY(){
 	Y = readByteFromMemory(effectiveAddress);
-	toggleNegativeOrZeroFlag(A);
+	toggleNegativeOrZeroFlag(Y);
 }
 
 void NESCPU::executeSTA(){
@@ -591,46 +762,47 @@ void NESCPU::executeSTY(){
 	writeByteToMemory(effectiveAddress, Y);
 }
 
+//--------------------------NOP/UNK---------------------------------
 void NESCPU::executeNOP(){
 }
 
 void NESCPU::executeUNK(){
-	throw "Código de operación desconocido";
 }
 
+//---------------------------STACK----------------------------------
 void NESCPU::executePHA(){
-	writeByteToMemory(STACK_ADDRESS+SP, A);
+	writeByteToMemory(STACK_ADDRESS | SP, A);
 	SP--;
 }
 
 void NESCPU::executePHP(){
-	writeByteToMemory(STACK_ADDRESS+SP, P);
+	writeByteToMemory(STACK_ADDRESS | SP, P.data | 0x30);
 	SP--;
 }
 
 void NESCPU::executePLA(){
 	SP++;
-	A = readByteFromMemory(STACK_ADDRESS+SP);
+	A = readByteFromMemory(STACK_ADDRESS | SP);
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executePLP(){
 	SP++;
-	P = readByteFromMemory(STACK_ADDRESS+SP);
+	P.data = readByteFromMemory(STACK_ADDRESS | SP);
 }
 
 void NESCPU::executeRTS(){
 	SP++;
-	PC = readShortFromMemory(STACK_ADDRESS+SP);
+	PC = readShortFromMemory(STACK_ADDRESS | SP);
 	SP++;
 	PC++;
 }
 
 void NESCPU::executeRTI(){
 	SP++;
-	P = readByteFromMemory(STACK_ADDRESS+SP) & ~INTERRUPT_DISABLE_FLAG;
+	P.data = readByteFromMemory(STACK_ADDRESS | SP);
 	SP++;
-	PC = readShortFromMemory(STACK_ADDRESS+SP);
+	PC = readShortFromMemory(STACK_ADDRESS | SP);
 	SP++;
 }
 
@@ -639,30 +811,33 @@ void NESCPU::executeJMP(){
 }
 
 void NESCPU::executeJSR(){
-	ushort pc = PC - 1;
-	writeByteToMemory(STACK_ADDRESS+SP, pc >> 8);
+	effectiveAddress = readByteFromMemory(PC++)
+					 | readByteFromMemory(PC) << 8;
+	writeByteToMemory(STACK_ADDRESS | SP, PC >> 8);
 	SP--;
-	writeByteToMemory(STACK_ADDRESS+SP, pc & 0xFF);
+	writeByteToMemory(STACK_ADDRESS | SP, PC & 0xFF);
 	SP--;
 	PC = effectiveAddress;
 }
 
 void NESCPU::executeBRK(){
-	writeByteToMemory(STACK_ADDRESS+SP, PC >> 8);
+	PC++;
+	writeByteToMemory(STACK_ADDRESS | SP, PC >> 8);
 	SP--;
-	writeByteToMemory(STACK_ADDRESS+SP, PC & 0xFF);
+	writeByteToMemory(STACK_ADDRESS | SP, PC & 0xFF);
 	SP--;
-	writeByteToMemory(STACK_ADDRESS+SP, P);
+	writeByteToMemory(STACK_ADDRESS | SP, P.data | 0x30);
 	SP--;
-	P &= ~INTERRUPT_DISABLE_FLAG;
+	P.I = 1;
 
 	if(nmi){
-		nmi = 0;
+		nmi = false;
 		PC =  readShortFromMemory(NMI_HANDLER_ADDRESS);
 	}else
 		PC = readShortFromMemory(IRQ_HANDLER_ADDRESS);
 }
 
+//--------------------------TRANSFER--------------------------------
 void NESCPU::executeTAX(){
 	X = A;
 	toggleNegativeOrZeroFlag(X);
@@ -679,7 +854,7 @@ void NESCPU::executeTXA(){
 }
 
 void NESCPU::executeTYA(){
-	Y = A;
+	A = Y;
 	toggleNegativeOrZeroFlag(A);
 }
 
@@ -692,6 +867,7 @@ void NESCPU::executeTXS(){
 	SP = X;
 }
 
+//-------------------------UNOFFICIAL-------------------------------
 void NESCPU::executeLAX(){
 	A = X = readByteFromMemory(effectiveAddress);
 	toggleNegativeOrZeroFlag(A);
@@ -704,25 +880,26 @@ void NESCPU::executeSAX(){
 void NESCPU::executeDCP(){
 	ubyte op = readByteFromMemory(effectiveAddress)-1;
 	writeByteToMemory(effectiveAddress, op);
-	ushort tmp = A - op;
-	P = (tmp >= 0)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	int tmp = A - op;
+	P.C = (A >= op)? 1 : 0;
 	toggleNegativeOrZeroFlag((ubyte)tmp);
 }
 
 void NESCPU::executeISB(){
 	ubyte op = readByteFromMemory(effectiveAddress)+1;
 	writeByteToMemory(effectiveAddress, op);
-	ubyte carry = P & CARRY_FLAG;
-	ushort tmp = A - op - !carry;
-	P = (tmp & 0xFF00)? P | CARRY_FLAG : P & ~CARRY_FLAG;
-	P = (((A ^ op) & (A ^ tmp)) & 0x80)? P | OVERFLOW_FLAG: P & ~OVERFLOW_FLAG;
-	A = tmp && 0xFF;
+	ubyte carry = P.C;
+	op ^= 0xFF;
+	int tmp = int(A) + op + carry;
+	P.C = (tmp & 0xFF00)? 1 : 0;
+	P.V = (((tmp ^ A) & (tmp ^ op)) & 0x80)? 1: 0;
+	A = tmp & 0xFF;
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeSLO(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	P = (op & 0x80)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (op & 0x80)? 1 : 0;
 	op <<= 1;
 	A |= op;
 	writeByteToMemory(effectiveAddress, op);
@@ -731,8 +908,8 @@ void NESCPU::executeSLO(){
 
 void NESCPU::executeRLA(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
-	P = (op & 0x80)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte carry = P.C;
+	P.C = (op & 0x80)? 1 : 0;
 	op = (op << 1) | carry;
 	writeByteToMemory(effectiveAddress, op);
 	A &= op;
@@ -741,7 +918,7 @@ void NESCPU::executeRLA(){
 
 void NESCPU::executeSRE(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	P = (op & 0x1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (op & 0x1)? 1 : 0;
 	op >>= 1;
 	writeByteToMemory(effectiveAddress, op);
 	A ^= op;
@@ -750,37 +927,37 @@ void NESCPU::executeSRE(){
 
 void NESCPU::executeRRA(){
 	ubyte op = readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
-	P = (op & 0x1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	ubyte carry = P.C;
+	P.C = (op & 0x1)? 1 : 0;
 	op = (op >> 1) | (carry << 7);
 	writeByteToMemory(effectiveAddress, op);
-	ushort tmp = A + op + (P & CARRY_FLAG);
-	P = (op & 0xFF00)? P | CARRY_FLAG : P & ~CARRY_FLAG;
-	P = (((A ^ tmp) & (op ^ tmp)) & 0x80) ? P | OVERFLOW_FLAG : P & ~OVERFLOW_FLAG;
-	A = op & 0xFF;
+	int tmp = int(A) + op + P.C;
+	P.C = (tmp & 0xFF00)? 1 : 0;
+	P.V = (((A ^ tmp) & (op ^ tmp)) & 0x80) ? 1 : 0;
+	A = tmp & 0xFF;
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeAAC(){
 	A &= readByteFromMemory(effectiveAddress);
 	toggleNegativeOrZeroFlag(A);
-	P = (P  & NEGATIVE_FLAG)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = P.N;
 }
 
 void NESCPU::executeASR(){
 	A &= readByteFromMemory(effectiveAddress);
-	P = (A & 0x1)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (A & 0x1)? 1 : 0;
 	A >>= 1;
 	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeARR(){
 	A &= readByteFromMemory(effectiveAddress);
-	ubyte carry = P & CARRY_FLAG;
+	ubyte carry = P.C;
 	A = (A >> 1) | (carry << 7);
 	toggleNegativeOrZeroFlag(A);
-	P = (A & 0x40)? P | CARRY_FLAG : P & ~CARRY_FLAG;
-	P = ((A & 0x20) >> 5) ^ (P & CARRY_FLAG) ? P | OVERFLOW_FLAG : P & ~OVERFLOW_FLAG;
+	P.C = (A & 0x40)? 1 : 0;
+	P.V = ((A & 0x20) >> 5) ^ (P.C) ? 1 : 0;
 }
 
 void NESCPU::executeATX(){
@@ -790,10 +967,10 @@ void NESCPU::executeATX(){
 }
 
 void NESCPU::executeAXS(){
-	ushort tmp = (X & A) - readByteFromMemory(effectiveAddress);
+	int tmp = (X & A) - readByteFromMemory(effectiveAddress);
 	X = tmp & 0xFF;
 	toggleNegativeOrZeroFlag(X);
-	P = (tmp >= 0)? P | CARRY_FLAG : P & ~CARRY_FLAG;
+	P.C = (tmp >= 0)? 1 : 0;
 }
 
 void NESCPU::executeSYA(){
@@ -811,6 +988,7 @@ void NESCPU::executeSXA(){
 void NESCPU::executeLAR(){
 	ubyte op = readByteFromMemory(effectiveAddress) & SP;
 	A = X = SP = op;
+	toggleNegativeOrZeroFlag(A);
 }
 
 void NESCPU::executeAXA(){
@@ -825,7 +1003,6 @@ void NESCPU::executeXAS(){
 }
 
 void NESCPU::executeXAA(){
-	A = (A | 0xEE) & X & readByteFromMemory(effectiveAddress);
+	A = X & readByteFromMemory(effectiveAddress);
 	toggleNegativeOrZeroFlag(A);
 }
-

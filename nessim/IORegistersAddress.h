@@ -2,7 +2,7 @@
  *   Copyright (C) 2014 by Manuel B. Sánchez                             *
  *   manuelbsan@hotmail.com                                              *
  *                                                                       *
- *	 This file is part of Nessim.                                       *
+ *	 This file is part of Nessim.                                        *
  *                                                                       *
  *   Nessim is free software: you can redistribute it and/or modify      *
  *   it under the terms of the GNU Lesser General Public License as      *
@@ -55,8 +55,8 @@ enum IORegistersAddress {
 	PAPU_DM_DATA_LENGTH_REG=0x4013,
 	PAPU_SPR_DMA_REGISTER=0x4014,
 	PAPU_SND_VERT_CLK_SIG_REG=0x4015,
-	PAPU_JOYPAD1_PORT=0x4016,
-	PAPU_JOYPAD2_PORT=0x4017
+	JOYPAD1_PORT=0x4016,
+	JOYPAD2_PORT=0x4017
 };
 
 #endif  //_IOREGISTERSADDRESS_H
